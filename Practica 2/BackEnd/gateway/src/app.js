@@ -35,4 +35,4 @@ app.get('/profile', auth, (req, res) => {
   res.json(req.user);
 });
 
-app.listen(3000);
+app.listen(3005);

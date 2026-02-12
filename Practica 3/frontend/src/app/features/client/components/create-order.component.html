@@ -1,0 +1,119 @@
+<div class="order-container">
+  <div class="order-header">
+    <h1>🍕 Crear Nueva Orden</h1>
+    <button class="btn btn-secondary" (click)="logout()">Cerrar Sesión</button>
+  </div>
+
+  <div class="order-card">
+    <form [formGroup]="orderForm" (ngSubmit)="onSubmit()">
+      
+      <!-- Dirección de entrega -->
+      <div class="form-group">
+        <label for="deliveryAddress">📍 Dirección de Entrega</label>
+        <input
+          id="deliveryAddress"
+          type="text"
+          formControlName="deliveryAddress"
+          placeholder="Calle 123, Colonia Centro, Ciudad"
+          class="form-control"
+        />
+      </div>
+
+      <!-- Lista de productos -->
+      <div class="products-section">
+        <div class="section-header">
+          <h3>🛒 Productos</h3>
+          <button type="button" class="btn btn-success" (click)="addItem()">
+            + Agregar Producto
+          </button>
+        </div>
+
+      <div class="items-list" formArrayName="items">
+        <div *ngFor="let item of items.controls; let i = index"
+            class="item-row"
+            [formGroupName]="i">
+            <div class="item-number">{{ i + 1 }}</div>
+            
+            <div class="form-group">
+              <label>Producto</label>
+              <select formControlName="productId" (change)="onProductChange(i)" class="form-control">
+                <option value="">Selecciona un producto</option>
+                <option *ngFor="let product of availableProducts" [value]="product.id">
+                  {{ product.name }} - ${{ product.price.toFixed(2) }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Cantidad</label>
+              <input
+                type="number"
+                formControlName="quantity"
+                min="1"
+                class="form-control"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Precio</label>
+              <input
+                type="number"
+                formControlName="price"
+                step="0.01"
+                readonly
+                class="form-control"
+              />
+            </div>
+
+            <div class="item-total">
+              ${{ (item.get('quantity')?.value * item.get('price')?.value).toFixed(2) }}
+            </div>
+
+            <button type="button" class="btn btn-danger btn-sm" (click)="removeItem(i)">
+              🗑️
+            </button>
+          </div>
+
+          <div *ngIf="items.length === 0" class="empty-state">
+            <p>No hay productos agregados. Click en "Agregar Producto" para comenzar.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div class="order-total" *ngIf="items.length > 0">
+        <h3>Total: ${{ getTotalAmount().toFixed(2) }}</h3>
+      </div>
+
+      <!-- Messages -->
+      <div class="alert alert-success" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
+
+      <div class="alert alert-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        class="btn btn-primary btn-block btn-lg"
+        [disabled]="orderForm.invalid || items.length === 0 || isLoading"
+      >
+        <span *ngIf="!isLoading">🚀 Realizar Pedido</span>
+        <span *ngIf="isLoading">⏳ Procesando...</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Info card -->
+  <div class="info-card">
+    <h4>💡 Información</h4>
+    <ul>
+      <li>Los productos disponibles están precargados</li>
+      <li>La validación de precios se hace con gRPC</li>
+      <li>Si modificas el precio, la orden será rechazada</li>
+      <li>Productos no disponibles también serán rechazados</li>
+    </ul>
+  </div>
+</div>
