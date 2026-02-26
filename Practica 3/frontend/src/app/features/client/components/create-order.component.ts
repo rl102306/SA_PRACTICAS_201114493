@@ -15,13 +15,22 @@ export class CreateOrderComponent implements OnInit {
   successMessage: string = '';
   isLoading: boolean = false;
   currentUser: any;
+  showCatalog: boolean = false;
 
-  // Productos disponibles (hardcodeados para la demo)
-  availableProducts = [
-    { id: '11111111-1111-1111-1111-111111111111', name: 'Pizza Margarita', price: 12.99, category: 'Pizzas' },
-    { id: '22222222-2222-2222-2222-222222222222', name: 'Hamburguesa Clásica', price: 8.50, category: 'Hamburguesas' },
-    { id: '33333333-3333-3333-3333-333333333333', name: 'Refresco', price: 2.00, category: 'Bebidas' },
-    { id: '55555555-5555-5555-5555-555555555555', name: 'Pasta Carbonara', price: 11.50, category: 'Pastas' }
+  // Restaurantes disponibles
+  availableRestaurants = [
+    { id: '99999999-9999-9999-9999-999999999999', name: 'Restaurante Central', type: 'Comida Variada' },
+    { id: '88888888-8888-8888-8888-888888888888', name: 'Pizzeria Italia', type: 'Pizzas' },
+    { id: '77777777-7777-7777-7777-777777777777', name: 'Burger House', type: 'Hamburguesas' }
+  ];
+
+  // Productos del catálogo (para referencia)
+  catalogProducts = [
+    { id: '11111111-1111-1111-1111-111111111111', restaurantId: '99999999-9999-9999-9999-999999999999', name: 'Pizza Margarita', price: 12.99, available: true },
+    { id: '22222222-2222-2222-2222-222222222222', restaurantId: '99999999-9999-9999-9999-999999999999', name: 'Hamburguesa Clásica', price: 8.50, available: true },
+    { id: '33333333-3333-3333-3333-333333333333', restaurantId: '99999999-9999-9999-9999-999999999999', name: 'Refresco', price: 2.00, available: true },
+    { id: '44444444-4444-4444-4444-444444444444', restaurantId: '99999999-9999-9999-9999-999999999999', name: 'Ensalada César', price: 7.50, available: false },
+    { id: '55555555-5555-5555-5555-555555555555', restaurantId: '99999999-9999-9999-9999-999999999999', name: 'Pasta Carbonara', price: 11.50, available: true }
   ];
 
   constructor(
@@ -31,7 +40,7 @@ export class CreateOrderComponent implements OnInit {
     private router: Router
   ) {
     this.orderForm = this.fb.group({
-      restaurantId: ['99999999-9999-9999-9999-999999999999', Validators.required],
+      restaurantId: ['', Validators.required],
       deliveryAddress: ['', Validators.required],
       items: this.fb.array([])
     });
@@ -50,11 +59,32 @@ export class CreateOrderComponent implements OnInit {
     return this.orderForm.get('items') as FormArray;
   }
 
-  addItem(): void {
+  get selectedRestaurantId(): string {
+    return this.orderForm.get('restaurantId')?.value;
+  }
+
+  get restaurantProducts() {
+    const restaurantId = this.selectedRestaurantId;
+    return this.catalogProducts.filter(p => p.restaurantId === restaurantId);
+  }
+
+  addItemFromCatalog(): void {
     const itemGroup = this.fb.group({
       productId: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]],
-      price: [0, [Validators.required, Validators.min(0)]]
+      price: [0, [Validators.required, Validators.min(0)]],
+      mode: ['catalog']
+    });
+
+    this.items.push(itemGroup);
+  }
+
+  addItemManual(): void {
+    const itemGroup = this.fb.group({
+      productId: ['', Validators.required],
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      price: [0, [Validators.required, Validators.min(0)]],
+      mode: ['manual']
     });
 
     this.items.push(itemGroup);
@@ -67,7 +97,7 @@ export class CreateOrderComponent implements OnInit {
   onProductChange(index: number): void {
     const item = this.items.at(index);
     const productId = item.get('productId')?.value;
-    const product = this.availableProducts.find(p => p.id === productId);
+    const product = this.catalogProducts.find(p => p.id === productId);
     
     if (product) {
       item.patchValue({ price: product.price });
@@ -82,6 +112,10 @@ export class CreateOrderComponent implements OnInit {
       total += quantity * price;
     });
     return total;
+  }
+
+  toggleCatalog(): void {
+    this.showCatalog = !this.showCatalog;
   }
 
   onSubmit(): void {
@@ -107,16 +141,9 @@ export class CreateOrderComponent implements OnInit {
           this.successMessage = `✅ ¡Orden creada exitosamente! ID: ${response.order?.id}`;
           console.log('✅ Orden creada:', response.order);
           
-          // Limpiar formulario
-          this.orderForm.reset({
-            restaurantId: '99999999-9999-9999-9999-999999999999'
-          });
+          this.orderForm.reset();
           this.items.clear();
           
-          // Redirigir después de 3 segundos
-          setTimeout(() => {
-            this.router.navigate(['/client/orders']);
-          }, 3000);
         } else {
           this.errorMessage = response.message || 'Error al crear orden';
           console.error('❌ Error:', response.message);
