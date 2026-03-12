@@ -2685,4 +2685,4 @@ UPDATE users SET restaurant_id = id WHERE role = 'RESTAURANT' AND restaurant_id 
 
 ---
 
-*Delivereats — Software Avanzado, USAC 2026 — Practica 5 — Carnet 201114493*
+*Delivereats — Software Avanzado, USAC 2026 — Practica 5 — Carnet 2011-14493*
