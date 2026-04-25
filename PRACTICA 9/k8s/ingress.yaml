@@ -8,8 +8,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   rules:
-    - host: helpdesk.local
-      http:
+    - http:
         paths:
           - path: /api/users
             pathType: Prefix
