@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ticket-service
-          image: 201114493/ticket-service:latest
+          image: vrl10/ticket-service:latest
           ports:
             - containerPort: 3002
           env:

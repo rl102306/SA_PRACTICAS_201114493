@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 env:
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_USERNAME: vrl10
+  IMAGE_PREFIX: vrl10
 
 jobs:
   # ─── JOB 1: LINT ──────────────────────────────────────────────

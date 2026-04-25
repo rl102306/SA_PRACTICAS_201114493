@@ -1,0 +1,55 @@
+# Claude
+.claude/
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular build
+dist/
+.angular/
+*.js.map
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfstate.d/
+**/*.tfvars
+**/*.tfvars.json
+**/crash.log
+**/override.tf
+**/override.tf.json
+
+# SSH keys
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+k3s_key
+k3s_key.pub
+
+# Docker
+.dockerignore
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

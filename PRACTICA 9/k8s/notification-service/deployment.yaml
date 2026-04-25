@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: 201114493/notification-service:latest
+          image: vrl10/notification-service:latest
           ports:
             - containerPort: 3003
           env:

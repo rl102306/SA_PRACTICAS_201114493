@@ -43,5 +43,5 @@ variable "ssh_user" {
 variable "ssh_pub_key_file" {
   description = "Ruta al archivo de clave publica SSH"
   type        = string
-  default     = "~/.ssh/id_rsa.pub"
+  default     = "~/.ssh/k3s_key.pub"
 }

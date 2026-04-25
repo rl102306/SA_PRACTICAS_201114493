@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: 201114493/user-service:latest
+          image: vrl10/user-service:latest
           ports:
             - containerPort: 3001
           env:

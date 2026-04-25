@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 201114493/helpdesk-frontend:latest
+          image: vrl10/helpdesk-frontend:latest
           ports:
             - containerPort: 80
           readinessProbe:
