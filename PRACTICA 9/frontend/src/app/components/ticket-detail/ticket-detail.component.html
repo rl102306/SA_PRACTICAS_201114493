@@ -1,0 +1,73 @@
+<div style="max-width:700px;margin:0 auto;">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+    <a routerLink="/tickets" class="btn btn-secondary">← Volver</a>
+    <h1 style="font-size:24px;font-weight:700;">Detalle del Ticket</h1>
+  </div>
+
+  <div *ngIf="loading" style="text-align:center;padding:40px;color:#666;">Cargando...</div>
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+  <div *ngIf="ticket && !loading" class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+      <div>
+        <span style="font-size:13px;color:#999;">Ticket #{{ ticket.id }}</span>
+        <h2 style="font-size:20px;margin-top:4px;">{{ ticket.titulo }}</h2>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="badge badge-{{ ticket.estado }}">{{ ticket.estado }}</span>
+        <span class="badge badge-{{ ticket.prioridad }}">{{ ticket.prioridad }}</span>
+        <button *ngIf="canEdit() && !editMode" (click)="editMode = true" class="btn btn-primary" style="font-size:13px;">Editar</button>
+      </div>
+    </div>
+
+    <div *ngIf="!editMode">
+      <div style="margin-bottom:16px;">
+        <strong style="font-size:13px;color:#666;">DESCRIPCION</strong>
+        <p style="margin-top:8px;line-height:1.6;white-space:pre-wrap;">{{ ticket.descripcion }}</p>
+      </div>
+      <div style="display:flex;gap:32px;color:#666;font-size:13px;border-top:1px solid #eee;padding-top:16px;margin-top:16px;">
+        <span>Creado: {{ ticket.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="ticket.fecha_actualizacion">Actualizado: {{ ticket.fecha_actualizacion | date:'dd/MM/yyyy HH:mm' }}</span>
+        <span>Usuario ID: {{ ticket.usuario_id }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="editMode">
+      <form (ngSubmit)="saveChanges()">
+        <div class="form-group">
+          <label>Titulo</label>
+          <input type="text" [(ngModel)]="editTitulo" name="titulo" required>
+        </div>
+        <div class="form-group">
+          <label>Descripcion</label>
+          <textarea [(ngModel)]="editDescripcion" name="descripcion" required rows="5"></textarea>
+        </div>
+        <div style="display:flex;gap:16px;">
+          <div class="form-group" style="flex:1;">
+            <label>Estado</label>
+            <select [(ngModel)]="editEstado" name="estado">
+              <option value="abierto">Abierto</option>
+              <option value="en_progreso">En progreso</option>
+              <option value="cerrado">Cerrado</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label>Prioridad</label>
+            <select [(ngModel)]="editPrioridad" name="prioridad">
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <button type="button" (click)="editMode = false" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving">
+            {{ saving ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

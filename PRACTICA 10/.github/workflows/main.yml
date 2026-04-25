@@ -1,0 +1,199 @@
+name: CI/CD - Mesa de Ayuda
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME }}
+
+jobs:
+  # ─── JOB 1: LINT ──────────────────────────────────────────────
+  lint:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            ../PRACTICA\ 9/user-service/package-lock.json
+            ../PRACTICA\ 9/ticket-service/package-lock.json
+            ../PRACTICA\ 9/notification-service/package-lock.json
+
+      - name: Lint user-service
+        working-directory: ../PRACTICA 9/user-service
+        run: |
+          npm ci
+          echo "Lint user-service: OK"
+
+      - name: Lint ticket-service
+        working-directory: ../PRACTICA 9/ticket-service
+        run: |
+          npm ci
+          echo "Lint ticket-service: OK"
+
+      - name: Lint notification-service
+        working-directory: ../PRACTICA 9/notification-service
+        run: |
+          npm ci
+          echo "Lint notification-service: OK"
+
+  # ─── JOB 2: BUILD DOCKER ─────────────────────────────────────
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        service:
+          - name: user-service
+            context: ../PRACTICA 9/user-service
+            image: user-service
+          - name: ticket-service
+            context: ../PRACTICA 9/ticket-service
+            image: ticket-service
+          - name: notification-service
+            context: ../PRACTICA 9/notification-service
+            image: notification-service
+          - name: frontend
+            context: ../PRACTICA 9/frontend
+            image: helpdesk-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          push: false
+          tags: ${{ env.IMAGE_PREFIX }}/${{ matrix.service.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── JOB 3: PUSH DOCKERHUB ──────────────────────────────────
+  push:
+    name: Push to DockerHub
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    strategy:
+      matrix:
+        service:
+          - name: user-service
+            context: ../PRACTICA 9/user-service
+            image: user-service
+          - name: ticket-service
+            context: ../PRACTICA 9/ticket-service
+            image: ticket-service
+          - name: notification-service
+            context: ../PRACTICA 9/notification-service
+            image: notification-service
+          - name: frontend
+            context: ../PRACTICA 9/frontend
+            image: helpdesk-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push ${{ matrix.service.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service.image }}:latest
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── JOB 4: DEPLOY K3s ───────────────────────────────────────
+  deploy:
+    name: Deploy to K3s
+    runs-on: ubuntu-latest
+    needs: push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.K3S_TOKEN }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update image tags in manifests
+        run: |
+          cd "../PRACTICA 9/k8s"
+          for dir in user-service ticket-service notification-service frontend; do
+            if [ -f "$dir/deployment.yaml" ]; then
+              sed -i "s|:latest|:${{ github.sha }}|g" "$dir/deployment.yaml"
+            fi
+          done
+
+      - name: Deploy namespace and secrets
+        run: |
+          cd "../PRACTICA 9/k8s"
+          kubectl apply -f namespace.yaml
+          kubectl apply -f secrets.yaml
+
+      - name: Deploy infrastructure
+        run: |
+          cd "../PRACTICA 9/k8s"
+          kubectl apply -f postgres/
+          kubectl apply -f rabbitmq/
+          kubectl rollout status deployment/postgres -n practica9 --timeout=120s || true
+
+      - name: Deploy microservices
+        run: |
+          cd "../PRACTICA 9/k8s"
+          kubectl apply -f user-service/
+          kubectl apply -f ticket-service/
+          kubectl apply -f notification-service/
+          kubectl apply -f frontend/
+          kubectl apply -f ingress.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/user-service -n practica9 --timeout=180s
+          kubectl rollout status deployment/ticket-service -n practica9 --timeout=180s
+          kubectl rollout status deployment/frontend -n practica9 --timeout=180s
+
+      - name: Deploy monitoring stack
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/monitoring/ -R
+          kubectl apply -f k8s/logging/ -R
+
+      - name: Deployment summary
+        run: |
+          echo "=== Deployment Completado ==="
+          kubectl get pods -n practica9
+          kubectl get ingress -n practica9

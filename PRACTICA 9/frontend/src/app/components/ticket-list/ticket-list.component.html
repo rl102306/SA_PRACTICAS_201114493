@@ -1,0 +1,69 @@
+<div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+    <h1 style="font-size:24px;font-weight:700;">Tickets de Soporte</h1>
+    <a routerLink="/tickets/new" class="btn btn-primary">+ Nuevo Ticket</a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card" style="margin-bottom:16px;display:flex;gap:16px;align-items:flex-end;">
+    <div class="form-group" style="margin-bottom:0;flex:1;">
+      <label>Estado</label>
+      <select [(ngModel)]="filterEstado" (change)="applyFilters()">
+        <option value="">Todos</option>
+        <option value="abierto">Abierto</option>
+        <option value="en_progreso">En progreso</option>
+        <option value="cerrado">Cerrado</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:0;flex:1;">
+      <label>Prioridad</label>
+      <select [(ngModel)]="filterPrioridad" (change)="applyFilters()">
+        <option value="">Todas</option>
+        <option value="baja">Baja</option>
+        <option value="media">Media</option>
+        <option value="alta">Alta</option>
+      </select>
+    </div>
+    <button (click)="applyFilters()" class="btn btn-secondary">Filtrar</button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="loading" style="text-align:center;padding:40px;color:#666;">Cargando tickets...</div>
+
+  <div *ngIf="!loading" class="card">
+    <table *ngIf="tickets.length > 0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Titulo</th>
+          <th>Estado</th>
+          <th>Prioridad</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ticket of tickets">
+          <td>{{ ticket.id }}</td>
+          <td>{{ ticket.titulo }}</td>
+          <td><span class="badge badge-{{ ticket.estado }}">{{ ticket.estado }}</span></td>
+          <td><span class="badge badge-{{ ticket.prioridad }}">{{ ticket.prioridad }}</span></td>
+          <td>{{ ticket.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td style="display:flex;gap:8px;">
+            <a [routerLink]="['/tickets', ticket.id]" class="btn btn-secondary" style="font-size:12px;padding:4px 10px;">Ver</a>
+            <button
+              *ngIf="authService.getCurrentUser()?.rol === 'admin' || authService.getCurrentUser()?.id === ticket.usuario_id"
+              (click)="deleteTicket(ticket.id)"
+              class="btn btn-danger"
+              style="font-size:12px;padding:4px 10px;">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p *ngIf="tickets.length === 0" style="text-align:center;padding:40px;color:#999;">
+      No hay tickets disponibles.
+    </p>
+  </div>
+</div>

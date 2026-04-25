@@ -1,0 +1,50 @@
+<div style="max-width:600px;margin:0 auto;">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+    <a routerLink="/tickets" class="btn btn-secondary">← Volver</a>
+    <h1 style="font-size:24px;font-weight:700;">Crear Nuevo Ticket</h1>
+  </div>
+
+  <div class="card">
+    <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+    <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+    <form (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label>Titulo *</label>
+        <input
+          type="text"
+          [(ngModel)]="titulo"
+          name="titulo"
+          required
+          placeholder="Describe brevemente el problema"
+          maxlength="200">
+      </div>
+
+      <div class="form-group">
+        <label>Descripcion *</label>
+        <textarea
+          [(ngModel)]="descripcion"
+          name="descripcion"
+          required
+          rows="6"
+          placeholder="Describe detalladamente el problema o solicitud..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Prioridad</label>
+        <select [(ngModel)]="prioridad" name="prioridad">
+          <option value="baja">Baja</option>
+          <option value="media">Media</option>
+          <option value="alta">Alta</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+        <a routerLink="/tickets" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          {{ loading ? 'Creando...' : 'Crear Ticket' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

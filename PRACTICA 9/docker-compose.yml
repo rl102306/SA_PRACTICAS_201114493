@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: helpdesk-postgres
+    environment:
+      POSTGRES_DB: helpdesk
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - helpdesk-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: helpdesk-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - helpdesk-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  user-service:
+    build: ./user-service
+    container_name: helpdesk-user-service
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: helpdesk
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      JWT_SECRET: super_secret_jwt_key_2024
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - helpdesk-net
+    restart: unless-stopped
+
+  ticket-service:
+    build: ./ticket-service
+    container_name: helpdesk-ticket-service
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: helpdesk
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      JWT_SECRET: super_secret_jwt_key_2024
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-net
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: helpdesk-notification-service
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-net
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: helpdesk-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - user-service
+      - ticket-service
+    networks:
+      - helpdesk-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  helpdesk-net:
+    driver: bridge

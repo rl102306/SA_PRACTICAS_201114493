@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: monitoring
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-config
+  namespace: monitoring
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: 'Mesa de Ayuda'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-helpdesk
+  namespace: monitoring
+data:
+  helpdesk.json: |
+    {
+      "title": "Mesa de Ayuda - Overview",
+      "uid": "helpdesk-overview",
+      "panels": [
+        {
+          "title": "CPU Usage por Pod",
+          "type": "graph",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{namespace='practica9'}[5m]) * 100",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        },
+        {
+          "title": "RAM Usage por Pod",
+          "type": "graph",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [
+            {
+              "expr": "container_memory_usage_bytes{namespace='practica9'} / 1024 / 1024",
+              "legendFormat": "{{pod}} (MB)"
+            }
+          ]
+        },
+        {
+          "title": "Trafico HTTP - Requests por minuto",
+          "type": "graph",
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+          "targets": [
+            {
+              "expr": "rate(http_requests_total{namespace='practica9'}[1m]) * 60",
+              "legendFormat": "{{service}} - {{method}} {{status}}"
+            }
+          ]
+        }
+      ],
+      "schemaVersion": 38,
+      "version": 1
+    }
